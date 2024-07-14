@@ -1,0 +1,21 @@
+# Score augmente bien quand il faut
+#0) rien = 0 score
+#0) un seul exerice en level 2 = 0 score
+#1) 1 exercice en level 1 + même en level 1 = 0 score
+#1) 1 exercice en level 1 + tout level 2 = 1 score
+#1) tout level 1 + tout level 1 = 1 score
+#1) tout level 1 + tout level 2 = 1 score
+#1) tout level 1 + 2 exercices level 1 = 1 score
+#2) tout level 2 = 1 score
+
+# Gestion vie et score
+#3) a score + pas réussite + vie>0 = 1 score + -1 vie
+#4) a score + pas réussite + vie=0 = 0 score + 2 vie
+#5) test 4) + réussite = 1 score + 2 vie
+#6) test 4) + pas réussite = 0 score + 2 vie
+7) a score + réussite + vie=2 = score+1 + 2 vie
+8) a score + réussite + vie<2 = score+1
+9) test 8) + 5 jours consécutifs = vie+1 (max 2)
+
+10) test des vies dans une serie (tester tous les autres tests qui engendre vies)
+11) test que les vies n'augmentent pas > 2
