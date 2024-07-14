@@ -31,6 +31,7 @@ function request() {
   return $response
 }
 
+test_crashed=()
 current_file=""
 function init_test() {
   out_folder=$(echo "${current_file%.*}" | cut -d '/' -f 2)
@@ -63,6 +64,7 @@ function init_test() {
     echo "[${row}] ${data} -> ${result}" >> "out/${out_folder}/out.log"
 
     if [ "$result" -ne "$expect" ]; then
+      test_crashed+=("${test_number}")
       success=0
     fi
   done
