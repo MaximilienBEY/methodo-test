@@ -5,7 +5,7 @@ const Payload = z.object({
   sessionId: z.string(),
   // date: z.coerce.date(),
   date: z.number().transform((val) => new Date(val * 1000)),
-  level: z.number().int().min(1).max(2),
+  level: z.number().int().min(0).max(2),
   seating: z.boolean(),
   lying: z.boolean()
 })
@@ -44,11 +44,34 @@ const calculate = (days) => {
 }
 
 /** @param {z.infer<typeof Payload>} data */
-const getSerial = ({ sessionId, date: d, level, seating, lying }) => {
-  const date = d.toISOString().split("T")[0]
+const getSerial = ({ sessionId, date: d, level, seating, lying }, ignorePrevious = false) => {
+  const dYear = d.getFullYear()
+  const dMonth = (d.getMonth() + 1).toString().padStart(2, "0")
+  const dDay = d.getDate().toString().padStart(2, "0")
+  const date = `${dYear}-${dMonth}-${dDay}`
+
   const days = users.get(sessionId) || []
 
-  const day = days.find((d) => d.date === date) || UserDay.parse({ date, practice: false, life: 0, serial: 0, training: { lying: 0, seating: 0 } })
+  const haveDay = days.at(-1)?.date === date
+  const previousDay = haveDay ? days.at(-2) : days.at(-1)
+  const day = haveDay ? days.at(-1) : UserDay.parse({ date, practice: false, life: 0, serial: 0, training: { lying: 0, seating: 0 } })
+
+  if (previousDay && !ignorePrevious) {
+    const delta = Math.floor((d.setHours(0, 0, 0, 0) - new Date(previousDay.date).setHours(0, 0, 0, 0)) / 86400000)
+    if (delta > 1) {
+      for (let i = 1; i < delta; i++) {
+        const date = new Date(new Date(previousDay.date).getTime() + i * 86400000)
+        getSerial({
+          sessionId,
+          date,
+          level: 0,
+          seating: false,
+          lying: false
+        }, true)
+      }
+    }
+  }
+
   day.training.lying = Math.min(2, (day.training.lying + (lying ? level : 0)))
   day.training.seating = Math.min(2, (day.training.seating + (seating ? level : 0)))
   day.practice = day.training.lying === 2 && day.training.seating === 2
@@ -59,7 +82,7 @@ const getSerial = ({ sessionId, date: d, level, seating, lying }) => {
   day.serial = serial
 
   users.set(sessionId, days.sort((a, b) => a.date.localeCompare(b.date)))
-  return serial
+  return { serial, life }
 }
 
 app.use(express.json())
@@ -69,7 +92,7 @@ app.delete("/", (req, res) => {
 })
 app.post("/", (req, res) => {
   const payload = Payload.parse(req.body)
-  const serial = getSerial(payload)
+  const { serial } = getSerial(payload)
 
   res.send(serial.toString())
 })
